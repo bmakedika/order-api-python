@@ -1,2 +1,13 @@
 fastAPI
 uvicorn
+python-dotenv
+pydantic
+python-jos[cryptography]
+passlib[bcrypt]
+sqlalchemy
+alembic
+psycopg2-binary
+redis
+httpx
+pytest
+pytest-asyncio

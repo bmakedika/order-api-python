@@ -1,11 +1,9 @@
 
 from pydantic import BaseModel
-from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
+from typing import List, Optional
 
-
-# Schémas Pydantic
 
 class ProductCreate(BaseModel):
     name: str
