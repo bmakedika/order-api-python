@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from app.models.product import ProductModel
 
-def get_all(db: Session) -> list[ProductModel]:
+def list_active(db: Session) -> list[ProductModel]:
     return db.query(ProductModel).filter(
         ProductModel.is_active == True
         ).all()
