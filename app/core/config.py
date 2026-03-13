@@ -17,3 +17,7 @@ TOKEN_EXPIRE_MINUTES = int(getenv('TOKEN_EXPIRE_MINUTES', '30'))
 
 ADMIN_PASSWORD = getenv('ADMIN_PASSWORD', 'admin-sercret')
 USER_PASSWORD = getenv('USER_PASSWORD', 'user-sercret')
+
+# Redis settings
+
+REDIS_URL = getenv('REDIS_URL', 'redis://localhost:6379')
