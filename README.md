@@ -7,13 +7,13 @@ Designed as a portfolio project showcasing clean architecture, JWT authenticatio
 
 ## Tech Stack
 
-- **FastAPI** - REST API framework
-- **PostgreSQL** - persistent database
-- **SQLAlchemy** - ORM
-- **Alembic** - database migrations
-- **Redis** - idempotency key storage
-- **Docker** - containerized services
-- **pytest** - automated tests
+- **FastAPI** — REST API framework
+- **PostgreSQL** — persistent database
+- **SQLAlchemy** — ORM
+- **Alembic** — database migrations
+- **Redis** — idempotency key storage
+- **Docker** — containerized services
+- **pytest** — automated tests
 
 ---
 
@@ -37,7 +37,7 @@ app/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/ton-username/order-api-python.git
+git clone https://github.com/bmakedika/order-api-python.git
 cd order-api-python
 ```
 
@@ -60,9 +60,11 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edit .env with your values
-
-> **Note:** On Linux/WSL, replace `localhost` with `127.0.0.1` in `DATABASE_URL` if you get a connection error.
 ```
+
+> **Note (Linux/WSL):** Replace `localhost` with `127.0.0.1` in `DATABASE_URL`.
+> If your password contains special characters (e.g. `@`), encode them in the URL:
+> `@` → `%40`, `!` → `%21`
 
 ### 5. Start Docker services
 
@@ -98,8 +100,8 @@ Visit **http://127.0.0.1:8000/docs** for the Swagger UI.
 
 | Method | Endpoint         | Description                               | Auth  |
 | ------ | ---------------- | ----------------------------------------- | ----- |
-| GET    | `/products`      | List products (pagination, filters, sort) | -     |
-| GET    | `/products/{id}` | Get product by ID                         | -     |
+| GET    | `/products`      | List products (pagination, filters, sort) | —     |
+| GET    | `/products/{id}` | Get product by ID                         | —     |
 | POST   | `/products`      | Create product                            | admin |
 | PATCH  | `/products/{id}` | Update product                            | admin |
 | DELETE | `/products/{id}` | Soft delete product                       | admin |
@@ -132,10 +134,11 @@ curl http://localhost:8000/products \
 ```
 
 **Mock credentials:**
-| Username | Password | Role |
-|----------|----------|------|
-| admin | admin-secret | admin |
-| user | user-secret | user |
+
+| Username | Password     | Role  |
+| -------- | ------------ | ----- |
+| admin    | admin-secret | admin |
+| user     | user-secret  | user  |
 
 ---
 
