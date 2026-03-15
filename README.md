@@ -60,6 +60,8 @@ pip install -r requirements.txt
 ```bash
 cp .env.example .env
 # Edit .env with your values
+
+> **Note:** On Linux/WSL, replace `localhost` with `127.0.0.1` in `DATABASE_URL` if you get a connection error.
 ```
 
 ### 5. Start Docker services
