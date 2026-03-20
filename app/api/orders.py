@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.auth import require_user
-from app.schemas.order import OrderCreate, OrderItemAdd, OrderResponse
+from app.core.auth import require_user, require_admin
+from app.schemas.order import OrderCreate, OrderItemAdd, OrderResponse, OrderStatusUpdate
 from app.services import order_service
 
 
@@ -83,5 +83,23 @@ def pay_order(
     if error == 'empty_order':
         raise HTTPException(status_code=400, detail='Cannot pay empty order')
     
+
+    return order
+
+
+
+@router.patch('/orders/{order_id}/status', response_model=OrderResponse)
+def update_order_status(
+    order_id: UUID,
+    status_update: OrderStatusUpdate,
+    _= Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    order = order_service.get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail='Order not found')
+    order.status = status_update.status
+    db.commit()
+    db.refresh(order)
 
     return order
