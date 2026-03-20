@@ -12,7 +12,10 @@ class OrderStatus(enum.Enum):
     PENDING_PAYMENT = 'pending_payment'
     PAID            = 'paid'
     SHIPPED         = 'shipped'
-    CANCELLED       = 'cancelled'  
+    CANCELLED       = 'cancelled'
+    DELIVERED       = 'delivered'
+    REFUNDED        = 'refunded'
+    FAILED          = 'failed'  
 
 
 class OrderModel(Base):
@@ -23,7 +26,7 @@ class OrderModel(Base):
     total_cents = Column(Integer, nullable=False, default=0) 
     currency    = Column(String, nullable=False)
     customer_id = Column(String, nullable=False)
-    created_at  = Column(DateTime(timezone=True,), default=lambda: datetime.now(timezone.utc))
+    created_at  = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     items = relationship('OrderItemModel', back_populates='order')
 
