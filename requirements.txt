@@ -27,3 +27,7 @@ pytest-asyncio==1.1.0
 
 # Linting
 ruff==0.12.8
+
+# Data Analysis
+streamlit==1.45.1
+pandas==2.2.3
