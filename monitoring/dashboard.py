@@ -23,17 +23,20 @@ while True:
             error_count = len(df[df['status_code'] >= 500])
             error_rate = (error_count / total_req) * 100
             if error_rate > 10:
-                st.metric('System Status', f'{error_rate:.1}%', delta='CRITICAL', delta_color='inverse')
+                st.metric('System Status', f'{error_rate:.1f}%', delta='CRITICAL', delta_color='inverse')
             else:
-                st.metric('System Status', f'{error_rate:.1}%', delta='STABLE', delta_color='normal')
+                st.metric('System Status', f'{error_rate:.1f}%', delta='STABLE', delta_color='normal')
 
         with col3:
             avg_lat = round(df['duration_ms'].mean(), 2)
             st.metric('Average Latency (ms)', f'{avg_lat} ms')
 
         st.subheader('API Activity')
-        chart_data = df.set_index('timestamp').resample('1min').count()['status_code']
-        st.area_chart(chart_data)
+        # TODO: replace with st.line_chart when altair supports Python 3.14 
+        st.dataframe(df[['timestamp', 'endpoint', 'duration_ms', 'status_code']],
+                     use_container_width=True
+        )
+        
 
         # Show the last 10 events in a table
         st.subheader('Latest events') 
