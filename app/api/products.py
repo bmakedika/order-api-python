@@ -6,12 +6,14 @@ from app.core.auth import require_admin
 from app.core.database import get_db
 from app.services import product_service
 from sqlalchemy.orm import Session
+from app.core.audit import performance_audit
 
 
 router = APIRouter()
 
 
 @router.get('/products', response_model=ProductList)
+@performance_audit
 def get_products(
     page: int = 1,
     page_size: int = 10,
@@ -34,6 +36,7 @@ def get_products(
 
 
 @router.get('/products/{id}', response_model=Product)
+@performance_audit
 def get_product(id: UUID, db: Session = Depends(get_db)):
     product = product_service.get_product_by_id(db, id)
     if not product:
@@ -42,6 +45,7 @@ def get_product(id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post('/products', response_model=Product)
+@performance_audit
 def create_product(
     product: ProductCreate,
     _=Depends(require_admin),
@@ -51,6 +55,7 @@ def create_product(
 
 
 @router.patch('/products/{id}', response_model=Product)
+@performance_audit
 def update_product(
     id: UUID, 
     update: ProductUpdate, 
@@ -64,6 +69,7 @@ def update_product(
 
 
 @router.delete('/products/{id}', status_code=204)
+@performance_audit
 def delete_product(
     id: UUID,
     _=Depends(require_admin),
