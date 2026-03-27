@@ -50,7 +50,7 @@ while True:
         ax.bar(df['endpoint'], df['duration_ms'])
         ax.set_xlabel('Endpoint')
         ax.set_ylabel('Duration (ms)')
-        ax.set_title('Latency by Endpoint (ms)')
+        ax.set_title('Performance by Endpoint')
         ax.tick_params(axis='x', rotation=45)
         plt.tight_layout()
         st.pyplot(fig)
@@ -63,7 +63,7 @@ while True:
 
         fig, ax = plt.subplots()
         ax.pie([success_count, client_error_count, server_error_count], labels=['Success', 'Client Errors', 'Server Errors'], autopct='%1.1f%%')
-        ax.set_title('Request Outcome Distribution')
+        ax.set_title('Reliability')
         st.pyplot(fig)
 
         # activity curve over time
