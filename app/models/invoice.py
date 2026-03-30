@@ -14,7 +14,7 @@ class InvoiceModel(Base):
     invoice_number = Column(String, nullable=False)
     id_order       = Column(PG_UUID(as_uuid=True), ForeignKey('orders.id'), nullable=False)
     id_payment     = Column(PG_UUID(as_uuid=True), nullable=False)
-    id_customer    = Column(PG_UUID(as_uuid=True), nullable=False)
+    id_customer    = Column(String, nullable=False)
     total_cents    = Column(Integer, nullable=False, default=0)
     tax            = Column(Integer, nullable=False)
     created_at     = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
