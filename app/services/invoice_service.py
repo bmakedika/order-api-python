@@ -12,7 +12,7 @@ def create_invoice(db: Session, order, id_payment):
     invoice = InvoiceModel(
         id=uuid4(),
         invoice_number=invoice_number,
-        order_id=order.id,
+        id_order=order.id,
         id_payment=id_payment,
         id_customer=order.customer_id,
         total_cents=order.total_cents,
