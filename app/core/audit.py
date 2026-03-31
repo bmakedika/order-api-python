@@ -12,8 +12,9 @@ def performance_audit(func):
     def wrapper(*args, **kwargs):
         if not os.path.exists(FILE_AUDIT):
             with open(FILE_AUDIT, mode='w', newline='') as f:
+                # write header if file doesn't exist
                 writer = csv.writer(f)
-                writer.writerow(['datetime', 'endpoint', 'duration_ms', 'status_code'])
+                writer.writerow(['requested_at', 'endpoint', 'duration_ms', 'status_code'])
         start_time = time.perf_counter()
         status_code = 200
 
@@ -26,10 +27,11 @@ def performance_audit(func):
             status_code = 500 
             raise e 
         finally:
+            # collect audit data and write to CSV
             duration = round((time.perf_counter() - start_time) * 1000, 2)
-            datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            requested_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
             with open(FILE_AUDIT, mode='a', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([datetime, func.__name__, duration, status_code])
+                writer.writerow([requested_at, func.__name__, duration, status_code])
     return wrapper
