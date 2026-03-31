@@ -29,5 +29,5 @@ def get_invoices_by_order(
     order_id: UUID, 
     _= Depends(require_user),
     db: Session = Depends(get_db)):
-    invoices = db.query(Invoice).filter(Invoice.order_id == order_id).all()
+    invoices = db.query(Invoice).filter(Invoice.id_order == order_id).all()
     return invoices

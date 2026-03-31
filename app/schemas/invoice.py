@@ -15,9 +15,9 @@ class InvoiceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     invoice_number: str
-    order_id: UUID
+    id_order: UUID
     id_payment: UUID
-    id_customer: UUID
+    id_customer: str
     total_cents: int
     tax: int
     created_at: datetime
