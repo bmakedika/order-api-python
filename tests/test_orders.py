@@ -171,3 +171,52 @@ def test_update_order_status_not_found(client):
     assert response.status_code == 404
     data = response.json()
     assert data['detail'] == 'Order not found'
+
+
+
+def test_get_invoice(client):
+    # create product + order + item
+    product = client.post("/products", json={
+        "name": "Keyboard",
+        "description": "Mechanical keyboard",
+        "price_cents": 8900,
+        "currency": "EUR",
+        "category": "tech"
+    }).json()
+
+    order = client.post("/orders", json={
+        "customer_id": "user-123",
+        "currency": "EUR"
+    }).json()
+
+    client.post(f"/orders/{order['id']}/items", json={
+        "product_id": product["id"],
+        "quantity": 1
+    })
+
+    # pay → invoice created automatically
+    client.post(
+        f"/orders/{order['id']}/pay",
+        headers={"Idempotency-Key": "test-invoice-001"}
+    )
+
+    # get invoices by order
+    invoices = client.get(f"/orders/{order['id']}/invoices").json()
+    assert len(invoices) == 1
+    invoice_id = invoices[0]['id']
+
+    # get invoice by id
+    response = client.get(f"/invoices/{invoice_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data['id'] == invoice_id
+    assert data['total_cents'] == 8900
+    assert data['tax'] == 1780
+
+
+def test_get_invoice_not_found(client):
+    response = client.get(
+        f"/invoices/00000000-0000-0000-0000-000000000000"
+    )
+    assert response.status_code == 404
+    assert response.json()['detail'] == "Invoice not found"
