@@ -22,6 +22,7 @@ class OrderModel(Base):
     __tablename__ = 'orders'
 
     id          = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id     = Column(PG_UUID(as_uuid=True), ForeignKey('users.id'), nullable=True, index=True)
     status      = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.DRAFT, index=True)
     total_cents = Column(Integer, nullable=False, default=0) 
     currency    = Column(String, nullable=False, default='EUR')
@@ -30,6 +31,7 @@ class OrderModel(Base):
 
     items = relationship('OrderItemModel', back_populates='order', cascade='all, delete-orphan')
     invoices = relationship('InvoiceModel', back_populates='order')
+    user = relationship('UserModel', back_populates='orders')
 
 
 
