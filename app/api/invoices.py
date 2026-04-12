@@ -12,7 +12,6 @@ router = APIRouter()
 
 
 @router.get('/invoices/{invoice_id}', response_model=InvoiceResponse)
-@performance_audit
 def get_invoice(
     invoice_id: UUID, 
     _= Depends(require_user),
@@ -24,7 +23,6 @@ def get_invoice(
 
 
 @router.get('/orders/{order_id}/invoices', response_model=List[InvoiceResponse])
-@performance_audit
 def get_invoices_by_order(
     order_id: UUID, 
     _= Depends(require_user),

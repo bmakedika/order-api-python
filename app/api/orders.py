@@ -12,7 +12,6 @@ router = APIRouter()
 
 
 @router.post('/orders', response_model=OrderResponse)
-@performance_audit
 def create_order(
     data: OrderCreate,
     _= Depends(require_user),
@@ -23,7 +22,6 @@ def create_order(
 
 
 @router.get('/orders/{order_id}', response_model=OrderResponse)
-@performance_audit
 def get_order(
     order_id: UUID,
     _= Depends(require_user),
@@ -37,7 +35,6 @@ def get_order(
 
 
 @router.post('/orders/{order_id}/items', response_model=OrderResponse)
-@performance_audit
 def add_item(
     order_id: UUID,
     data: OrderItemAdd,
@@ -56,7 +53,6 @@ def add_item(
 
 
 @router.delete('/orders/{order_id}/items/{item_id}', status_code=200)
-@performance_audit
 def remove_item(
     order_id: UUID,
     item_id: UUID,
@@ -72,7 +68,6 @@ def remove_item(
 
 
 @router.post('/orders/{order_id}/pay', response_model=OrderResponse)
-@performance_audit
 def pay_order(
     order_id: UUID,
     _= Depends(require_user),
@@ -95,7 +90,6 @@ def pay_order(
 
 
 @router.patch('/orders/{order_id}/status', response_model=OrderResponse)
-@performance_audit
 def update_order_status(
     order_id: UUID,
     status_update: OrderStatusUpdate,
