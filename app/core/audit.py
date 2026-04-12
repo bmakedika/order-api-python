@@ -14,7 +14,7 @@ def performance_audit(func):
             with open(FILE_AUDIT, mode='w', newline='') as f:
                 # write header if file doesn't exist
                 writer = csv.writer(f)
-                writer.writerow(['requested_at', 'endpoint', 'duration_ms', 'status_code'])
+                writer.writerow(['requested_at', 'endpoint_name', 'duration_ms', 'status_code'])
         start_time = time.perf_counter()
         status_code = 200
 
