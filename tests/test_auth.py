@@ -28,6 +28,8 @@ def test_login_success_returns_token(client):
     data = response.json()
     assert 'access_token' in data
     assert isinstance(data['access_token'], str)
+    assert 'refresh_token' in data
+    assert isinstance(data['refresh_token'], str)
     assert len(data['access_token']) > 10
     assert data['token_type'] == 'bearer'
 
