@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 from app.core.redis_client import get_redis
 from fastapi.responses import JSONResponse
+from app.api import users
 
 app = FastAPI(title='Order API', version='0.2.0')
 
@@ -65,43 +66,41 @@ async def logging_middleware(request : Request, call_next):
 
 @app.middleware('http')
 async def rate_limit_middleware(request : Request, call_next):
-    redis = get_redis()
-
-    # 1. get client IP
-    client_ip = request.client.host
-    
-    # 2. limit deping on the endpoint
     path = request.url.path
-    
-    # limit to 5 login attempts per minute
-    if path =='/auth/login':
-        key = f"rate_limit:login:{client_ip}"
-        limit = 5 
-    
-    # limit to 10 registration attempts per hour
-    elif path == '/auth/register':
-        key = f"rate_limit:register:{client_ip}"
-        limit = 10  
+    protected_prefixes = ('/orders', '/invoices', '/users/me')
 
-    # limit to 60 requests per hour 
+    # rate only for protected endpoints
+    if not path.startswith(protected_prefixes):
+        return await call_next(request)
+    
+    redis = get_redis()
+    client_ip = request.client.host
+
+    # parameters for endpoints family
+    if path.startswith('/orders'):
+        bucket = 'orders'
+        limit = 120
+        ttl_seconds = 300
+    elif path.startswith('/invoices'):
+        bucket = 'invoices'
+        limit = 60
+        ttl_seconds = 300
     else:
-        key = f"rate_limit:general:{client_ip}"
-        limit = 60  
+        bucket = 'users_me'
+        limit = 30
+        ttl_seconds = 300
     
-    # 3. Increment the Redis counter and set expiry if it's a new key
-    
-    current_count = redis.incr(key)
+    key = f'rate_limit:{bucket}:{client_ip}'
 
-    # 4. if counter > limit 429 Too Many Requests
+    current_count = redis.incr(key)
+    if current_count == 1:
+        redis.expire(key, ttl_seconds)
     if current_count > limit:
         return JSONResponse(
             status_code=429,
             content={'detail': 'Too many requests. Please try again later.'}
         )
     
-    if current_count == 1:
-        # Set expiry to 60 seconds (1 minute)
-        redis.expire(key, 60)  
     return await call_next(request)
 
 
@@ -113,3 +112,4 @@ app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(orders.router)
 app.include_router(invoices.router)
+app.include_router(users.router)
