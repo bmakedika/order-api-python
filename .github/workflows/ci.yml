@@ -14,11 +14,6 @@ jobs:
         image: redis:7-alpine
         ports:
           - 6379:6379
-        options: >-
-          --health-cmd 'redis-cli ping'
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 20
 
     env:
       # Test uses SQLite and Redis is required for rate limiting + refresh tokens storage
@@ -41,6 +36,26 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: wait for Redis
+        run: |
+          python - <<'PY'
+          import os, time
+          import redis
+
+          url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+          r = redis.redis.from_url(url, decode_responses=True)
+
+          for i in range(60):
+              try:
+                  if r.ping():
+                      print("Redis is ready!")
+                      break
+              except Exception as e:
+                  time.sleep(1)
+          else:
+              raise SystemExit("Redis did not become ready in time")
+          PY
 
       - name: Run tests
         run: |
