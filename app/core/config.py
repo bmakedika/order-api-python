@@ -13,6 +13,7 @@ DATABASE_URL = getenv('DATABASE_URL')
 SECRET_KEY = getenv('SECRET_KEY', 'change-me-in-production')
 ALGORITHM = getenv('ALGORITHM', 'HS256') 
 TOKEN_EXPIRE_MINUTES = int(getenv('TOKEN_EXPIRE_MINUTES', '30'))
+REFRESH_TOKEN_EXPIRE_DAYS = int(getenv('REFRESH_TOKEN_EXPIRE_DAYS', '30'))
 
 # Admin and user credentials
 
