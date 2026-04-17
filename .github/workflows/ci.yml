@@ -55,15 +55,24 @@ jobs:
             --protected-mode no
 
           docker ps -a
-          docker logs --details redis-ci || true
-          docker inspect redis-ci || true
+          docker logs --details --tail 200 redis-ci || true
 
-      - name: Smoke check Redis in container
-        shell: bash
-        run: |
-          set -euxo pipefail
-          docker exec redis-ci redis-cli ping
-          docker exec redis-ci redis-cli INFO server | head -n 80
+          # Short inspect (avoid huge JSON)
+          docker inspect -f 'status={{.State.Status}} running={{.State.Running}} pid={{.State.Pid}} exit={{.State.ExitCode}} err={{.State.Error}} started={{.State.StartedAt}}' redis-ci || true
+          docker port redis-ci || true
+
+          # Wait/ping inside the container
+          for i in {1..30}; do
+            if docker exec redis-ci redis-cli ping 2>/dev/null | grep -qx PONG; then
+              echo "Redis responds inside container"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Redis never responded inside container"
+          docker logs --details --tail 500 redis-ci || true
+          exit 1
 
       - name: Wait for Redis (tcp + redis-cli)
         shell: bash
@@ -83,8 +92,6 @@ jobs:
           echo "Redis did not become ready in time"
           echo "---- docker logs redis-ci ----"
           docker logs --details redis-ci || true
-          echo "---- docker inspect redis-ci ----"
-          docker inspect redis-ci || true
           exit 1
 
       - name: Install Python dependencies
