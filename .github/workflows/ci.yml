@@ -61,10 +61,12 @@ jobs:
           docker port redis-ci || true
 
           for i in {1..30}; do
-            if docker exec redis-ci redis-cli ping 2>/dev/null | grep -qx PONG; then
+            OUT="$(docker exec redis-ci redis-cli ping 2>&1 || true)"
+            if [ "$OUT" = "PONG" ]; then
               echo "Redis responds inside container"
               exit 0
             fi
+            echo "Attempt $i (inside container): ping output='$OUT'"
             sleep 1
           done
 
@@ -79,11 +81,13 @@ jobs:
           echo "Waiting for Redis (inside container)..."
 
           for i in {1..60}; do
-            if docker exec redis-ci redis-cli ping 2>/dev/null | grep -qx PONG; then
+            OUT="$(docker exec redis-ci redis-cli ping 2>&1 || true)"
+            if [ "$OUT" = "PONG" ]; then
               echo "Redis is ready"
               exit 0
             fi
-            echo "Attempt $i: not ready yet"
+
+            echo "Attempt $i: ping output='$OUT'"
             sleep 1
           done
 
