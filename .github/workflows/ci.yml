@@ -37,7 +37,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y git redis-tools
+          apt-get install -y git redis-tools netcat-openbsd
 
       - name: Install Python dependencies
         run: |
@@ -58,17 +58,17 @@ jobs:
           echo "Waiting for Redis at redis:6379..."
 
           for i in {1..90}; do
-            if redis-cli -h redis -p 6379 ping | grep -q PONG; then
+            OUT="$(redis-cli -h redis -p 6379 ping 2>&1 || true)"
+            if echo "$OUT" | grep -q "PONG"; then
               echo "Redis is ready"
               exit 0
             fi
-            echo "Redis not ready yet..."
+
+            echo "Redis not ready yet... (attempt $i) - $OUT"
             sleep 1
           done
 
           echo "Redis did not become ready in time"
-          echo "Trying to ping with verbose output:"
-          redis-cli -h redis -p 6379 ping || true
           exit 1
 
       - name: Run tests
