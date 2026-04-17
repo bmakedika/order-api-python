@@ -11,7 +11,7 @@ def test_register(client):
     assert data['role'] == 'user'
 
 
-def test_login_success_returns_token(client):
+def test_login_success_returns_access_token_only(client):
     # First, register a user
     client.post('/auth/register', json={
         'username': 'testuser',
@@ -28,10 +28,11 @@ def test_login_success_returns_token(client):
     data = response.json()
     assert 'access_token' in data
     assert isinstance(data['access_token'], str)
-    assert 'refresh_token' in data
-    assert isinstance(data['refresh_token'], str)
     assert len(data['access_token']) > 10
     assert data['token_type'] == 'bearer'
+
+    # Refresh token must not be in Json body
+    assert 'refresh_token' not in data
 
 
 def test_login_sets_refresh_token_cookie(client):
