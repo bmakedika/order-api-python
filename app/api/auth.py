@@ -8,9 +8,13 @@ from app.schemas.auth import TokenResponse, RefreshRequest, LogoutRequest
 from app.schemas.user import UserRegister, UserLogin, UserResponse
 from app.services import user_service
 from app.repos.user_repo import get_by_email
-from app.core.config import REFRESH_TOKEN_EXPIRE_DAYS
+from app.core.config import (
+    REFRESH_TOKEN_EXPIRE_DAYS,
+    AUTH_COOKIE_SECURE,
+    AUTH_COOKIE_SAMESITE,
+    RETURN_REFRESH_TOKEN_IN_BODY,
+)
 from app.core.token_blacklist import blacklist_jti
-from app.core.auth import decode_token
 
 
 router = APIRouter()
@@ -22,8 +26,8 @@ def set_refresh_cookie(response: Response, refresh_token: str) -> None:
         key=REFRESH_COOKIE_NAME,
         value=refresh_token,
         httponly=True,
-        secure=False,
-        samesite='lax',
+        secure=AUTH_COOKIE_SECURE,
+        samesite=AUTH_COOKIE_SAMESITE,
         path='/auth',
         max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
@@ -45,11 +49,13 @@ def login(body: UserLogin, response: Response, db: Session = Depends(get_db)):
     refresh_token = create_refresh_token(subject=user.email, role=user.role)
     store_refresh_token(refresh_token, subject=user.email)
     set_refresh_cookie(response, refresh_token)
-    return {
+    payload = {
         'access_token': access_token,
-        'refresh_token': refresh_token,
         'token_type': 'bearer'
     }
+    if RETURN_REFRESH_TOKEN_IN_BODY:
+        payload['refresh_token'] = refresh_token
+    return payload
 
 # get current user info
 @router.post('/auth/refresh', response_model=TokenResponse)
@@ -89,11 +95,13 @@ def refresh(
     new_refresh = create_refresh_token(subject=user.email, role=user.role)
     store_refresh_token(new_refresh, subject=user.email)
     set_refresh_cookie(response, new_refresh)
-    return {
+    payload_out = {
         'access_token': new_access,
-        'refresh_token': new_refresh,
         'token_type': 'bearer'
     }
+    if RETURN_REFRESH_TOKEN_IN_BODY:
+        payload_out['refresh_token'] = new_refresh
+    return payload_out
 
 @router.post('/auth/logout')
 def logout(
@@ -122,7 +130,7 @@ def logout(
             # exp is numeric timestamp (from jose)
             exp = payload.get('exp')
             if jti and exp:
-                ttl = int(exp -time.time())
+                ttl = int(exp - time.time())
                 if ttl > 0:
                     blacklist_jti(jti, ttl_seconds=ttl)
 
