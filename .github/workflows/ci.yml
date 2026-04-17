@@ -43,26 +43,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Wait for Redis
+      - name: Wait for Redis (container health)
+        shell: bash
         run: |
-          python - <<'PY'
-          import os, time
-          import redis
-
-          url = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379')
-          r = redis.Redis.from_url(url, decode_responses=True)
-
-          for i in range(60):
-              try:
-                  if r.ping():
-                      print('Redis is ready')
-                      break
-              except Exception as e:
-                  print(f'Redis not ready yet: {e!r}')
-                  time.sleep(1)
-          else:
-              raise SystemExit('Redis did not become ready in time')
-          PY
+          set -euo pipefail
+          echo 'Waiting for Redis service container to be healthy...'
+          for i in {1..60}; do
+            # Find the redis container ID created by Actions
+            CID="$(docker ps -q --filter 'ancestor=redis:7-alpine' | head -n 1)"
+            if [ -n "${CID}" ]; then
+              STATUS="$(docker inspect -f '{{.State.Health.Status}}' "${CID}" 2>/dev/null || true)"
+              echo "Redis container: ${CID}, health: ${STATUS}"
+              if [ "${STATUS}" = "healthy" ]; then
+                echo 'Redis is healthy'
+                exit 0
+              fi
+            else
+              echo 'Redis container not found yet...'
+            fi
+            sleep 1
+          done
+          echo 'Redis did not become healthy in time'
+          docker ps -a
+          CID="$(docker ps -aq --filter 'ancestor=redis:7-alpine' | head -n 1 || true)"
+          if [ -n "${CID}" ]; then
+            docker logs "${CID}" || true
+          fi
+          exit 1
 
       - name: Run tests
         run: |
