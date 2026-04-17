@@ -22,7 +22,6 @@ jobs:
       ALGORITHM: HS256
       TOKEN_EXPIRE_MINUTES: "30"
       REFRESH_TOKEN_EXPIRE_DAYS: "30"
-      RETURN_REFRESH_TOKEN_IN_BODY: "true"
 
       ACCESS_SECRET_KEY: ci-access-secret-key
       REFRESH_SECRET_KEY: ci-refresh-secret-key
