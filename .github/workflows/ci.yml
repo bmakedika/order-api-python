@@ -14,15 +14,12 @@ jobs:
     services:
       redis:
         image: redis:7-alpine
-        command: >-
-          redis-server
-          --appendonly no
-          --bind 0.0.0.0
-          --protected-mode no
+        ports:
+          - "6379:6379"
 
     env:
       DATABASE_URL: sqlite:///./ci.db
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://127.0.0.1:6379
       SECRET_KEY: ci-secret-key
       ALGORITHM: HS256
       TOKEN_EXPIRE_MINUTES: "30"
@@ -36,19 +33,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
-
-      - name: Debug Redis service early
-        shell: bash
-        run: |
-          set -x
-          docker ps -a
-          CID="$(docker ps -aq --filter "ancestor=redis:7-alpine" | head -n 1 || true)"
-          echo "CID=$CID"
-          if [ -n "$CID" ]; then
-            docker inspect -f 'state={{json .State}} restart={{.RestartCount}} health={{json .State.Health}}' "$CID" || true
-            docker logs --tail 200 "$CID" || true
-            docker exec "$CID" sh -lc 'uname -a; ps aux; (ss -lntp || netstat -lntp || true); (redis-cli ping || true)' || true
-          fi
 
       - name: Set up Python
         uses: actions/setup-python@v6.1.0
@@ -66,18 +50,15 @@ jobs:
           pip install -r requirements.txt
 
       - name: Wait for Redis (tcp + redis-cli)
-        id: wait_redis
-        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          echo "Waiting for Redis at redis:6379..."
+          echo "Waiting for Redis at 127.0.0.1:6379..."
 
           for i in {1..60}; do
-            echo "Attempt $i: $(date -Is) tcp=$(nc -vz redis 6379 2>&1 | tail -n 1) cli=$(redis-cli -h redis -p 6379 ping 2>&1 | tail -n 1)"
+            echo "Attempt $i: $(date -Is) tcp=$(nc -vz 127.0.0.1 6379 2>&1 | tail -n 1) cli=$(redis-cli -h 127.0.0.1 -p 6379 ping 2>&1 | tail -n 1)"
 
-            CLI="$(redis-cli -h redis -p 6379 ping 2>&1 || true)"
-            if [ "${CLI}" = "PONG" ]; then
+            if [ "$(redis-cli -h 127.0.0.1 -p 6379 ping 2>/dev/null || true)" = "PONG" ]; then
               echo "Redis is ready"
               exit 0
             fi
@@ -86,30 +67,7 @@ jobs:
           done
 
           echo "Redis did not become ready in time"
-          exit 1
-
-      - name: Debug Redis service container (always)
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -x
           docker ps -a || true
-
-          CID="$(docker ps -aq --filter "ancestor=redis:7-alpine" | head -n 1 || true)"
-          echo "CID=$CID"
-          if [ -n "$CID" ]; then
-            docker inspect "$CID" || true
-            docker logs --details "$CID" || true
-            docker exec "$CID" sh -lc 'uname -a; ps aux; (ss -lntp || netstat -lntp || true); (redis-cli ping || true)' || true
-          fi
-
-          ss -lntp || true
-
-      - name: Fail if Redis was not ready
-        if: steps.wait_redis.outcome != 'success'
-        run: |
-          echo "Redis was not ready; failing the job."
           exit 1
 
       - name: Run tests
