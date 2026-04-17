@@ -71,7 +71,7 @@ jobs:
           done
 
           echo "Redis never responded inside container"
-          docker logs --details --tail 500 redis-ci || true
+          docker logs --details --tail 200 redis-ci || true
           exit 1
 
       - name: Wait for Redis (inside container)
@@ -82,17 +82,19 @@ jobs:
 
           for i in {1..60}; do
             OUT="$(docker exec redis-ci redis-cli ping 2>&1 || true)"
-            if [ "$OUT" = "PONG" ]; then
+            OUT_CLEAN="$(printf '%s' "$OUT" | tr -d '\r')"
+
+            if printf '%s' "$OUT_CLEAN" | grep -q '^PONG$'; then
               echo "Redis is ready"
               exit 0
             fi
 
-            echo "Attempt $i: ping output='$OUT'"
+            echo "Attempt $i: ping output='$OUT_CLEAN'"
             sleep 1
           done
 
           echo "Redis did not become ready in time"
-          docker logs --details --tail 500 redis-ci || true
+          docker logs --details --tail 200 redis-ci || true
           exit 1
 
       - name: Install Python dependencies
