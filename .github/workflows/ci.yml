@@ -57,11 +57,9 @@ jobs:
           docker ps -a
           docker logs --details --tail 200 redis-ci || true
 
-          # Short inspect (avoid huge JSON)
           docker inspect -f 'status={{.State.Status}} running={{.State.Running}} pid={{.State.Pid}} exit={{.State.ExitCode}} err={{.State.Error}} started={{.State.StartedAt}}' redis-ci || true
           docker port redis-ci || true
 
-          # Wait/ping inside the container
           for i in {1..30}; do
             if docker exec redis-ci redis-cli ping 2>/dev/null | grep -qx PONG; then
               echo "Redis responds inside container"
@@ -74,24 +72,23 @@ jobs:
           docker logs --details --tail 500 redis-ci || true
           exit 1
 
-      - name: Wait for Redis (tcp + redis-cli)
+      - name: Wait for Redis (inside container)
         shell: bash
         run: |
           set -euo pipefail
-          echo "Waiting for Redis at 127.0.0.1:6379..."
+          echo "Waiting for Redis (inside container)..."
 
           for i in {1..60}; do
-            echo "Attempt $i: $(date -Is) tcp=$(nc -vz 127.0.0.1 6379 2>&1 | tail -n 1) cli=$(redis-cli -h 127.0.0.1 -p 6379 ping 2>&1 | tail -n 1)"
-            if [ "$(redis-cli -h 127.0.0.1 -p 6379 ping 2>/dev/null || true)" = "PONG" ]; then
+            if docker exec redis-ci redis-cli ping 2>/dev/null | grep -qx PONG; then
               echo "Redis is ready"
               exit 0
             fi
+            echo "Attempt $i: not ready yet"
             sleep 1
           done
 
           echo "Redis did not become ready in time"
-          echo "---- docker logs redis-ci ----"
-          docker logs --details redis-ci || true
+          docker logs --details --tail 500 redis-ci || true
           exit 1
 
       - name: Install Python dependencies
