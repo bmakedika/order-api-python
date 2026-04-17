@@ -14,8 +14,6 @@ jobs:
     services:
       redis:
         image: redis:7-alpine
-        ports:
-          - "6379:6379"
         command: >-
           redis-server
           --appendonly no
@@ -24,7 +22,7 @@ jobs:
 
     env:
       DATABASE_URL: sqlite:///./ci.db
-      REDIS_URL: redis://127.0.0.1:6379
+      REDIS_URL: redis://redis:6379
       SECRET_KEY: ci-secret-key
       ALGORITHM: HS256
       TOKEN_EXPIRE_MINUTES: "30"
@@ -73,12 +71,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "Waiting for Redis at 127.0.0.1:6379..."
+          echo "Waiting for Redis at redis:6379..."
 
           for i in {1..60}; do
-            echo "Attempt $i: $(date -Is) tcp=$(nc -vz 127.0.0.1 6379 2>&1 | tail -n 1) cli=$(redis-cli -h 127.0.0.1 -p 6379 ping 2>&1 | tail -n 1)"
+            echo "Attempt $i: $(date -Is) tcp=$(nc -vz redis 6379 2>&1 | tail -n 1) cli=$(redis-cli -h redis -p 6379 ping 2>&1 | tail -n 1)"
 
-            CLI="$(redis-cli -h 127.0.0.1 -p 6379 ping 2>&1 || true)"
+            CLI="$(redis-cli -h redis -p 6379 ping 2>&1 || true)"
             if [ "${CLI}" = "PONG" ]; then
               echo "Redis is ready"
               exit 0
