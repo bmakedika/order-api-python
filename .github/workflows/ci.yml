@@ -41,7 +41,7 @@ jobs:
       - name: Start Redis (docker run)
         shell: bash
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           docker rm -f redis-ci >/dev/null 2>&1 || true
 
           docker run -d \
@@ -49,19 +49,21 @@ jobs:
             -p 6379:6379 \
             redis:7.2 \
             redis-server \
-            --save "" \
             --appendonly no \
-            --dir /tmp
+            --dir /tmp \
+            --bind 0.0.0.0 \
+            --protected-mode no
 
           docker ps -a
           docker logs --details redis-ci || true
+          docker inspect redis-ci || true
 
       - name: Smoke check Redis in container
         shell: bash
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           docker exec redis-ci redis-cli ping
-          docker exec redis-ci redis-cli INFO server | head -n 50
+          docker exec redis-ci redis-cli INFO server | head -n 80
 
       - name: Wait for Redis (tcp + redis-cli)
         shell: bash
