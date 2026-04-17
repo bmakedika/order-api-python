@@ -49,12 +49,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: Wait for Redis (redis-cli)
+        id: wait_redis
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
           echo "Waiting for Redis at 127.0.0.1:6379..."
 
-          for i in {1..120}; do
+          for i in {1..30}; do
             OUT="$(redis-cli -h 127.0.0.1 -p 6379 ping 2>&1 || echo "__REDIS_CLI_FAILED__")"
             echo "Attempt $i: ${OUT}"
 
@@ -69,17 +71,19 @@ jobs:
           echo "Redis did not become ready in time"
           exit 1
 
-      - name: Debug Redis service container (on failure)
-        if: failure()
+      - name: Debug Redis service container (always)
+        if: always()
+        continue-on-error: true
         shell: bash
         run: |
           set -x
-          docker ps -a
+          echo "---- docker ps -a ----"
+          docker ps -a || true
 
           echo "---- redis containers ----"
-          docker ps -a --filter "ancestor=redis:7-alpine"
+          docker ps -a --filter "ancestor=redis:7-alpine" || true
 
-          CID="$(docker ps -aq --filter "ancestor=redis:7-alpine" | head -n 1)"
+          CID="$(docker ps -aq --filter "ancestor=redis:7-alpine" | head -n 1 || true)"
           echo "CID=$CID"
 
           if [ -n "$CID" ]; then
@@ -92,6 +96,12 @@ jobs:
 
           echo "---- listening ports ----"
           ss -lntp || true
+
+      - name: Fail if Redis was not ready
+        if: steps.wait_redis.outcome != 'success'
+        run: |
+          echo "Redis was not ready; failing the job."
+          exit 1
 
       - name: Run tests
         run: |
