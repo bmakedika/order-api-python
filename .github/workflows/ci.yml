@@ -43,32 +43,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Wait for Redis (container health)
+      - name: Install redis-cli
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y redis-tools
+
+      - name: Wait for Redis
         shell: bash
         run: |
           set -euo pipefail
-          echo 'Waiting for Redis service container to be healthy...'
+          echo 'Waiting for Redis to respond to PING on 127.0.0.1:6379...'
+
           for i in {1..60}; do
-            # Find the redis container ID created by Actions
-            CID="$(docker ps -q --filter 'ancestor=redis:7-alpine' | head -n 1)"
-            if [ -n "${CID}" ]; then
-              STATUS="$(docker inspect -f '{{.State.Health.Status}}' "${CID}" 2>/dev/null || true)"
-              echo "Redis container: ${CID}, health: ${STATUS}"
-              if [ "${STATUS}" = "healthy" ]; then
-                echo 'Redis is healthy'
-                exit 0
-              fi
-            else
-              echo 'Redis container not found yet...'
+            if redis-cli -h 127.0.0.1 -p 6379 ping | grep -q PONG; then
+              echo 'Redis is ready'
+              exit 0
             fi
+            echo 'Redis is not ready yet...'
             sleep 1
           done
-          echo 'Redis did not become healthy in time'
-          docker ps -a
-          CID="$(docker ps -aq --filter 'ancestor=redis:7-alpine' | head -n 1 || true)"
-          if [ -n "${CID}" ]; then
-            docker logs "${CID}" || true
-          fi
+
+          echo 'Redis did not become ready in time'
           exit 1
 
       - name: Run tests
