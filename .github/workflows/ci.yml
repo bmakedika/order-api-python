@@ -9,17 +9,16 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
-    container:
-      image: python:3.13-slim
-
     services:
       redis:
         image: redis:7-alpine
+        ports:
+          - 6379:6379
         options: '--health-cmd="redis-cli ping" --health-interval=2s --health-timeout=5s --health-retries=60'
 
     env:
       DATABASE_URL: sqlite:///./ci.db
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://127.0.0.1:6379
       SECRET_KEY: ci-secret-key
       ALGORITHM: HS256
       TOKEN_EXPIRE_MINUTES: "30"
@@ -34,19 +33,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y git redis-tools
+      - name: Set up Python
+        uses: actions/setup-python@v6.1.0
+        with:
+          python-version: "3.13"
 
-      - name: Debug - list steps env
-        shell: bash
+      - name: Install system dependencies (redis-cli)
         run: |
-          set -x
-          whoami
-          python --version
-          pip --version || true
-          redis-cli --version || true
+          sudo apt-get update
+          sudo apt-get install -y redis-tools
 
       - name: Install Python dependencies
         run: |
@@ -57,13 +52,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "=== ENTER wait-for-redis step ==="
-          echo "Hosts entry for redis:"
-          getent hosts redis || true
-          echo "Waiting for Redis at redis:6379..."
+          echo "Waiting for Redis at 127.0.0.1:6379..."
 
           for i in {1..120}; do
-            OUT="$(redis-cli -h redis -p 6379 ping 2>&1 || true)"
+            OUT="$(redis-cli -h 127.0.0.1 -p 6379 ping 2>&1 || true)"
             echo "Attempt $i: ${OUT}"
 
             if [ "${OUT}" = "PONG" ]; then
