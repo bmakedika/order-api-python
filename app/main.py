@@ -1,16 +1,17 @@
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.security import HTTPBearer
-from app.api import products, auth, orders, invoices
-from fastapi.middleware.cors import CORSMiddleware
-import time
-import csv
-import os
-from datetime import datetime
-from app.core.redis_client import get_redis
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.api import users
+from fastapi.security import HTTPBearer
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api import auth, products, orders, invoices, users
+from app.core.redis_client import get_redis
+from app.core.middlewares.audit import AuditLoggingMiddleware
+
 
 app = FastAPI(title='Order API', version='0.2.0')
+
+# Audit logging (writes audit_log.csv for the Streamlit dashboard)
+app.add_middleware(AuditLoggingMiddleware, audit_csv_path='audit_log.csv')
 
 security = HTTPBearer()
 
@@ -26,42 +27,13 @@ app.add_middleware(
         'POST',
         'PUT',
         'PATCH', 
-        'DELETE'
+        'DELETE',
     ],
     allow_headers=[
         'Authorization',
-        'Content-Type'
+        'Content-Type',
     ],
 )
-
-
-@app.middleware('http')
-async def logging_middleware(request : Request, call_next):
-    if not os.path.exists('audit_log.csv'):
-        with open('audit_log.csv', mode='w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['requested_at', 'endpoint_name', 'duration_ms', 'status_code'])
-    
-    start_time = time.perf_counter()
-    requested_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    endpoint_name = f'{request.method} {request.url.path}'
-    status_code = 200
-
-    try:
-        response = await call_next(request)
-        status_code = response.status_code
-        return response
-    except HTTPException as e:
-        status_code = e.status_code
-        raise e
-    except Exception as e:
-        status_code = 500
-        raise e
-    finally:
-        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
-        with open('audit_log.csv', mode='a', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow([requested_at, endpoint_name, duration_ms, status_code])
 
 
 @app.middleware('http')
@@ -98,7 +70,7 @@ async def rate_limit_middleware(request : Request, call_next):
     if current_count > limit:
         return JSONResponse(
             status_code=429,
-            content={'detail': 'Too many requests. Please try again later.'}
+            content={'detail': 'Too many requests. Please try again later.'},
         )
     
     return await call_next(request)
