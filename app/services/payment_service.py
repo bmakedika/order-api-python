@@ -8,37 +8,29 @@ from app.services.invoice_service import create_invoice
 
 IDEMPOTENCY_TTL = 86400
 
-
 def pay_order(db: Session, order_id: UUID, idempotency_key: str):
     redis = get_redis()
     
-    # check if the idempotency key has been used before
     cached = redis.get(f'idempotency:{idempotency_key}')
     if cached:
         return order_repo.get_by_id(db, order_id), 'already_processed'
 
-    # check if order exists
     order = order_repo.get_by_id(db, order_id)
     if not order:
         return None, 'order_not_found'
     
-    # check if order is in a valid state
     if order.status != OrderStatus.DRAFT:
         return order, 'invalid_status'
 
-    # check if order total is not empty
     if order.total_cents == 0:
         return order, 'empty_order'
     
     order.status = OrderStatus.PAID
     db.commit()
     db.refresh(order)
-
-    # call create_invoice to generate an invoice linked to this payment 
     
     create_invoice(db, order, id_payment=uuid4())
 
-    # cache the result in redis
     redis.set(f'idempotency:{idempotency_key}', 'paid', ex=IDEMPOTENCY_TTL)
 
     return order, None

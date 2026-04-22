@@ -25,14 +25,15 @@ def override_get_db():
     finally:
         db.close()
 
-
 # override auth dependencies
+
 def override_require_admin():
     return {"sub": "admin@example.com", "role": "admin"}
 
 def override_require_user():
-    # IMPORTANT: sub doit être un email si ton code utilise get_by_email(payload["sub"])
     return {"sub": "user@example.com", "role": "user"}
+
+# pytest fixture for client
 
 @pytest.fixture(scope="function")
 def client():
@@ -40,9 +41,6 @@ def client():
     get_redis().flushdb()
 
     app.dependency_overrides[get_db] = override_get_db
-    # on peut garder admin override si tu veux, mais pas nécessaire
-    # app.dependency_overrides[require_admin] = override_require_admin
-
     yield TestClient(app)
 
     Base.metadata.drop_all(bind=engine)

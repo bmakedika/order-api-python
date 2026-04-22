@@ -4,11 +4,11 @@ from datetime import datetime, timezone
 from app.models.invoice import InvoiceModel, InvoiceItemModel
 
 def create_invoice(db: Session, order, id_payment):
-    # generate a unique invoice number using uuid4 
     invoice_number = f"INV-{uuid4()}"
-    # calculate tax (20% of total) 
     tax = int(order.total_cents * 0.2)
+    
     # create and save InvoiceModel 
+    
     invoice = InvoiceModel(
         id=uuid4(),
         invoice_number=invoice_number,

@@ -23,28 +23,23 @@ def get_order(db: Session, order_id: UUID):
 
 
 def add_item(db: Session, order_id: UUID, data: OrderItemAdd):
-    # check if order exists
     order = order_repo.get_by_id(db, order_id)
     if not order:
         return None, 'order not found'
-    # check status
+    
     if order.status != OrderStatus.DRAFT:
         return None, 'cannot modify a non-draft order'
     
-    # check if product active and exists
     product = product_repo.get_by_id(db, data.product_id)
     if not product or not product.is_active:
         return None, 'product not available'
-    # check quantity
+    
     if data.quantity <= 0:
         return None, 'invalid quantity'
     
-
-    # check if item already exists in order
     existing_item = order_repo.get_item_by_product(db, order_id, data.product_id)
 
     if existing_item:
-        # update quantity and line total
         existing_item.quantity += data.quantity
         existing_item.line_total_cents = existing_item.quantity * existing_item.unit_price_cents
         order_repo.save(db, existing_item)
@@ -52,7 +47,6 @@ def add_item(db: Session, order_id: UUID, data: OrderItemAdd):
         item = existing_item
 
     else:
-        # create new item
         line_total_cents = product.price_cents * data.quantity
 
         item = order_repo.add_item(db, {
@@ -64,7 +58,6 @@ def add_item(db: Session, order_id: UUID, data: OrderItemAdd):
             'line_total_cents': line_total_cents,
         })
     
-    # total recalcution
     order.total_cents = sum(i.line_total_cents for i in order.items)
     order_repo.save(db, order)
 

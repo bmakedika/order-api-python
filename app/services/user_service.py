@@ -5,8 +5,8 @@ from app.repos.user_repo import create, get_by_email
 
 
 # Initialize password context
-pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
+pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 
 # register user
 

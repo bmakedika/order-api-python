@@ -12,7 +12,6 @@ def test_register(client):
 
 
 def test_login_success_returns_access_token_only(client):
-    # First, register a user
     client.post('/auth/register', json={
         'username': 'testuser',
         'email': 'testuser2@example.com',
@@ -30,13 +29,10 @@ def test_login_success_returns_access_token_only(client):
     assert isinstance(data['access_token'], str)
     assert len(data['access_token']) > 10
     assert data['token_type'] == 'bearer'
-
-    # Refresh token must not be in Json body
     assert 'refresh_token' not in data
 
 
 def test_login_sets_refresh_token_cookie(client):
-    # First, register a user
     client.post('/auth/register', json={
         'username': 'cookieuser',
         'email': 'cookieuser@example.com',
@@ -49,12 +45,10 @@ def test_login_sets_refresh_token_cookie(client):
     })
 
     assert response.status_code == 200
-    # Refresh token should be set in HttpOnly cookie
     set_cookie = response.headers.get('set-cookie')
     assert set_cookie is not None
     assert 'refresh_token=' in set_cookie
     assert 'HttpOnly' in set_cookie
-    # Path should match what we set in the API
     assert 'Path=/auth' in set_cookie
 
 

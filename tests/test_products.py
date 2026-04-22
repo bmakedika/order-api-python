@@ -9,7 +9,6 @@ def test_list_products_empty(client_auth):
     assert data['total'] == 0
 
 
-
 def test_create_product(client_auth):
     response = client_auth.post('/products', json={
         'name': 'Keyboard',
@@ -23,7 +22,6 @@ def test_create_product(client_auth):
     assert data['name'] == 'Keyboard'
     assert data['price_cents'] == 8900
     assert data['is_active'] == True
-
 
 
 def test_get_product(client_auth):

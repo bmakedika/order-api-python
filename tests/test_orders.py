@@ -194,7 +194,7 @@ def test_get_invoice(client_auth):
         "quantity": 1
     })
 
-    # pay → invoice created automatically
+    # pay : invoice created automatically
     client_auth.post(
         f"/orders/{order['id']}/pay",
         headers={"Idempotency-Key": "test-invoice-001"}

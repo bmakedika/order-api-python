@@ -34,12 +34,12 @@ def set_refresh_cookie(response: Response, refresh_token: str) -> None:
 def clear_refresh_cookie(response: Response) -> None:
     response.delete_cookie(key=REFRESH_COOKIE_NAME, path='/auth')
 
-# register
+
 @router.post('/auth/register', response_model=UserResponse)
 def register(body: UserRegister, db: Session = Depends(get_db)):
     return user_service.register_user(db, username=body.username, email=body.email, password=body.password)
 
-# create_access_token in login endpoint
+
 @router.post('/auth/login', response_model=AccessTokenResponse)
 def login(body: UserLogin, response: Response, db: Session = Depends(get_db)):
     user = user_service.login_user(db, email=body.email, password=body.password)
@@ -53,7 +53,7 @@ def login(body: UserLogin, response: Response, db: Session = Depends(get_db)):
         'token_type': 'bearer'
     }
 
-# get current user info
+
 @router.post('/auth/refresh', response_model=AccessTokenResponse)
 def refresh(
     request: Request, 
@@ -68,24 +68,21 @@ def refresh(
     if not refresh_token:
         raise HTTPException(status_code=401, detail='Missing refresh token')
     
-    # 1. JWT must be valid and must be a refresh token
     payload = decode_token(refresh_token)
     if payload.get('type') != 'refresh':
         raise HTTPException(status_code=401, detail='Invalid refresh token')
     
-    # 2. JWt must exist in Redis (not revoked)
+    
     subject = get_subject_for_refresh_token(refresh_token)
     if not subject:
         raise HTTPException(status_code=401, detail='Invalid refresh token')
     
-    # 3. Ensure user still exists
+    
     user = get_by_email(db, email=subject)
     if not user:
-        # revoke silentely to clean redis
         revoke_refresh_token(refresh_token)
         raise HTTPException(status_code=401, detail='Invalid refresh token')
     
-    # 4. Rotation: revoke old, issue new refresh, store new
     revoke_refresh_token(refresh_token)
     new_access = create_access_token(subject=user.email, role=user.role)
     new_refresh = create_refresh_token(subject=user.email, role=user.role)
@@ -103,7 +100,7 @@ def logout(
     authorization: str | None = Header(default=None),
     body: LogoutRequest | None = None
     ):
-    # 1. Revoke refresh token
+    
     cookie_token = request.cookies.get(REFRESH_COOKIE_NAME)
     body_token = body.refresh_token if body else None
     refresh_token = body_token or cookie_token
@@ -113,14 +110,13 @@ def logout(
     
     clear_refresh_cookie(response)
 
-    # 2. Blacklist access token jti
+   
     if authorization and authorization.startswith('Bearer '):
         access_token = authorization.removeprefix('Bearer ').strip()
         payload = decode_token(access_token)
 
         if payload.get('type') == 'access':
             jti = payload.get('jti')
-            # exp is numeric timestamp (from jose)
             exp = payload.get('exp')
             if jti and exp:
                 ttl = int(exp - time.time())

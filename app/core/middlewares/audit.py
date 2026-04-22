@@ -2,8 +2,6 @@ import csv
 import os
 import time
 from datetime import datetime
-from typing import Callable
-
 from fastapi import Request
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -14,7 +12,6 @@ class AuditLoggingMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.audit_csv_path = audit_csv_path
 
-        # Ensure file exists + header is written once at startup
         if not os.path.exists(self.audit_csv_path):
             with open(self.audit_csv_path, mode='w', newline='') as f:
                 writer = csv.writer(f)

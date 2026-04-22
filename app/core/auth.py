@@ -49,7 +49,7 @@ def create_refresh_token(subject: str, role: str) -> str:
 
 
 def decode_token(token: str) -> dict:
-    # First decode without verification to detect type and choose key
+    
     try:
         unverified = jwt.get_unverified_claims(token)
     except Exception:
