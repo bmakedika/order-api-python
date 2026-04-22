@@ -1,3 +1,0 @@
-# fake DB
-
-products = []
