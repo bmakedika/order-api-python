@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer
 import uuid
 from app.core.config import (
     ACCESS_SECRET_KEY,
-    REFRESH_SECRET_KEY, 
+    REFRESH_SECRET_KEY,
     ALGORITHM,
     TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
@@ -13,7 +13,6 @@ from app.core.config import (
     JWT_AUDIENCE,
 )
 from app.core.token_blacklist import is_jti_blacklisted
-
 
 security = HTTPBearer()
 
@@ -49,18 +48,20 @@ def create_refresh_token(subject: str, role: str) -> str:
 
 
 def decode_token(token: str) -> dict:
-    
     try:
         unverified = jwt.get_unverified_claims(token)
     except Exception:
-        raise HTTPException(status_code=401, detail='Invalid or expired token')
-    
+        raise HTTPException(
+            status_code=401,
+            detail='Invalid or expired token',
+        )
+
     token_type = unverified.get('type')
     if token_type == 'refresh':
         key = REFRESH_SECRET_KEY
     else:
         key = ACCESS_SECRET_KEY
-    
+
     try:
         return jwt.decode(
             token,
@@ -70,31 +71,40 @@ def decode_token(token: str) -> dict:
             audience=JWT_AUDIENCE,
         )
     except JWTError:
-        raise HTTPException(status_code=401, detail='Invalid or expired token')
+        raise HTTPException(
+            status_code=401,
+            detail='Invalid or expired token',
+        )
 
 
-def require_admin(credentials=Depends(security)):
-    payload = decode_token(credentials.credentials)
-    
-    if payload.get('type') != 'access':
-        raise HTTPException(status_code=401, detail='Invalid token type')
-    
-    jti = payload.get('jti')
-    if jti and is_jti_blacklisted(jti):
-        raise HTTPException(status_code=401, detail='Token has been revoked')
-    
-    if payload.get("role") != 'admin':
-        raise HTTPException(status_code=403, detail='Forbidden')
-    return payload
+def require_role(required_role: str = None):
+    def role_verifier(credentials=Depends(security)):
+        payload = decode_token(credentials.credentials)
+
+        if payload.get('type') != 'access':
+            raise HTTPException(
+                status_code=401,
+                detail='Invalid token type',
+            )
+
+        jti = payload.get('jti')
+        if jti and is_jti_blacklisted(jti):
+            raise HTTPException(
+                status_code=401,
+                detail='Token has been revoked',
+            )
+
+        if required_role:
+            user_role = payload.get('role')
+            if user_role != required_role:
+                raise HTTPException(
+                    status_code=403,
+                    detail='Forbidden',
+                )
+        return payload
+    return role_verifier
 
 
-def require_user(credentials=Depends(security)):
-    payload = decode_token(credentials.credentials)
-
-    if payload.get('type') != 'access':
-        raise HTTPException(status_code=401, detail='Invalid token type')
-    
-    jti = payload.get('jti')
-    if jti and is_jti_blacklisted(jti):
-        raise HTTPException(status_code=401, detail='Token has been revoked')
-    return payload
+# Backward-compatible aliases
+require_user = require_role()
+require_admin = require_role('admin')
