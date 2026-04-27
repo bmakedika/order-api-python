@@ -6,13 +6,15 @@ from app.main import app
 from app.core.database import Base, get_db
 from app.core.auth import require_admin, require_user
 from app.core.redis_client import get_redis
+from app.models.user import UserModel
+from uuid import uuid4
 
 
 # DB SQLite in momory for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+SQLALCHEMY_DATABASE_URL = 'sqlite:///./test.db'
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    connect_args={'check_same_thread': False}
 )
 TestingSessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
@@ -26,36 +28,50 @@ def override_get_db():
         db.close()
 
 # override auth dependencies
-
 def override_require_admin():
-    return {"sub": "admin@example.com", "role": "admin"}
+    return {'sub': 'admin@example.com', 'role': 'admin'}
+
 
 def override_require_user():
-    return {"sub": "user@example.com", "role": "user"}
+    return {'sub': 'user@example.com', 'role': 'user'}
 
 # pytest fixture for client
-
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def client():
     Base.metadata.create_all(bind=engine)
     get_redis().flushdb()
-
     app.dependency_overrides[get_db] = override_get_db
     yield TestClient(app)
-
     Base.metadata.drop_all(bind=engine)
     app.dependency_overrides = {}
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def client_auth():
     Base.metadata.create_all(bind=engine)
     get_redis().flushdb()
+    
+    #create users and find them by using get_by_email
+    db = TestingSessionLocal()
+    db.add(UserModel(
+        id=uuid4(),
+        username='testuser',
+        email='user@example.com',
+        hashed_password='fake',
+        role='user',
+    ))
+    db.add(UserModel(
+        id=uuid4(),
+        username='adminuser',
+        email='admin@example.com',
+        hashed_password='fake',
+        role='admin',
+    ))
+    db.commit()
+    db.close()
 
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[require_admin] = override_require_admin
     app.dependency_overrides[require_user] = override_require_user
-
     yield TestClient(app)
-
     Base.metadata.drop_all(bind=engine)
     app.dependency_overrides = {}
