@@ -346,4 +346,4 @@ MIT — voir [LICENSE](LICENSE)
 ---
 
 _Projet académique — Prépa Master Digital · Bienvenu MAKEDIKA · 2026_  
-_[github.com/bmakedika/order-api-python](https://github.com/bmakedika/order-api)_
+_[github.com/bmakedika/order-api](https://github.com/bmakedika/order-api)_
